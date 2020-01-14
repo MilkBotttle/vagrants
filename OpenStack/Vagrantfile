@@ -26,6 +26,7 @@ Vagrant.configure("2") do |config|
 
   # Deploy
   config.vm.define "ka" do |ka|
+    ka.vm.synced_folder ".", "/vagrant", type: "nfs"
     ka.vm.hostname = "ka"
     ka.vm.provider :libvirt do |domain|
       domain.memory = 1024*4
@@ -44,6 +45,7 @@ Vagrant.configure("2") do |config|
   # ctrl-nodes
   (1..3).each do |i|
     config.vm.define "ctrl-#{i}" do |node|
+      node.vm.synced_folder ".", "/vagrant", disabled: true
       node.vm.hostname = "ctrl-#{i}"
       node.vm.provider :libvirt do |domain|
         domain.memory = 1024*4
@@ -62,6 +64,7 @@ Vagrant.configure("2") do |config|
   # com-nodes
   (1..2).each do |i|
     config.vm.define "com-#{i}" do |node|
+      node.vm.synced_folder ".", "/vagrant", disabled: true
       node.vm.hostname = "com-#{i}"
       node.vm.provider :libvirt do |domain|
         domain.memory = 1024*4

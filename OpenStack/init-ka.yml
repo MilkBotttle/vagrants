@@ -2,4 +2,12 @@
 - hosts: all
   become: true
   tasks:
+    - name: Install git
+      package:
+        name: git
+        state: present
 
+    - name: Clone ko
+      git:
+        repo: "https://github.com/MilkBotttle/ansible-kolla-os.git"
+        dest: /root/ansible-kolla-os
