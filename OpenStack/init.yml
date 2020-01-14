@@ -1,0 +1,19 @@
+- hosts: all
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Set root authorized key
+      authorized_key:
+        user: root
+        key: "{{ lookup('file','keys/key.pub') }}"
+
+    - name: Copy private key
+      copy:
+        src: "keys/key"
+        dest: "/root/.ssh/id_rsa"
+
+    - name: Copy public key
+      copy:
+        src: "keys/key.pub"
+        dest: "/root/.ssh/id_rsa.pub"
+

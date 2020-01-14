@@ -1,0 +1,80 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # Global
+  config.vm.box = "centos/7"
+
+  # Global ssh key config
+
+  config.ssh.insert_key = false
+  config.ssh.private_key_path = ["keys/key", "~/.vagrant.d/insecure_private_key"]
+
+  # vagrant user
+  config.vm.provision "file", source: "keys/key.pub", destination: "~/.ssh/authorized_keys"
+  config.vm.provision "file", source: "keys/key.pub", destination: "~/.ssh/id_rsa.pub"
+  config.vm.provision "file", source: "keys/key", destination: "/home/vagrant/.ssh/id_rsa"
+
+  config.vm.provision "shell", inline: <<-EOC
+    sudo sed -i -e "\\#PasswordAuthentication yes# s#PasswordAuthentication yes#PasswordAuthentication no#g" /etc/ssh/sshd_config
+    sudo systemctl restart sshd
+  EOC
+
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "init.yml"
+  end
+
+  # Deploy
+  config.vm.define "ka" do |ka|
+    ka.vm.hostname = "ka"
+    ka.vm.provider :libvirt do |domain|
+      domain.memory = 1024*4
+      domain.volume_cache = "unsafe"
+      domain.machine_virtual_size = 100
+    end
+
+    ka.vm.network :private_network,
+      :libvirt__network_name => "pxe" 
+
+    ka.vm.provision "ansible" do |ansible|
+      ansible.playbook = "init-ka.yml"
+    end
+  end
+
+  # ctrl-nodes
+  (1..3).each do |i|
+    config.vm.define "ctrl-#{i}" do |node|
+      node.vm.hostname = "ctrl-#{i}"
+      node.vm.provider :libvirt do |domain|
+        domain.memory = 1024*4
+        domain.volume_cache = "unsafe"
+        domain.machine_virtual_size = 50
+      end
+
+      node.vm.network :private_network, :libvirt__network_name => "pxe" 
+      node.vm.network :private_network, :libvirt__network_name => "internal_api" 
+      node.vm.network :private_network, :libvirt__network_name => "external"
+      node.vm.network :private_network, :libvirt__network_name => "storage" 
+
+    end
+  end
+    
+  # com-nodes
+  (1..2).each do |i|
+    config.vm.define "com-#{i}" do |node|
+      node.vm.hostname = "com-#{i}"
+      node.vm.provider :libvirt do |domain|
+        domain.memory = 1024*4
+        domain.volume_cache = "unsafe"
+        domain.machine_virtual_size = 50
+      end
+
+      node.vm.network :private_network, :libvirt__network_name => "pxe" 
+      node.vm.network :private_network, :libvirt__network_name => "internal_api" 
+      node.vm.network :private_network, :libvirt__network_name => "external"
+      node.vm.network :private_network, :libvirt__network_name => "storage" 
+      node.vm.network :private_network, :libvirt__network_name => "tenant" 
+
+    end
+  end
+end
